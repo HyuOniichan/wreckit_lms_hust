@@ -5,6 +5,21 @@
 + Ki hoc moi nhat: $2026.1$
 
 
+
+## Setup 
+
++ Google -> Chon icon extension -> `Manage extensions`
++ Bat `Developer mode` -> Chon `Load unpacked`
++ Tai folder nay len (folder co chua file `manifest.json`)
+
+
+
+## Usage
+
++ Khi lam LMS, bam vao extension (hoac bam `S` tren ban phim) de highlight dap an
+
+
+
 ## Reference
 
 + Nguon tham khao cac mon hoc: 
