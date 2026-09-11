@@ -86,9 +86,37 @@ function handleShowAnswer() {
 
 
 
+// --- Message from popup
+
 chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "showAnswer") {
         handleShowAnswer();
+    }
+});
+
+
+
+// --- Hotkeys
+
+document.addEventListener("keydown", (event) => {
+    if (event.key.toLowerCase() == "s") {
+		// Skip if holding Ctrl / Alt / Meta
+		if (event.ctrlKey || event.altKey || event.metaKey) return;
+	
+		// Skip while texting
+		const target = event.target;
+	
+		if (
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target instanceof HTMLSelectElement ||
+			target.isContentEditable
+		) {
+			return;
+		}
+	
+		console.log("HOTKEY S -> SHOW ANSWER");
+		handleShowAnswer();
     }
 });
 
