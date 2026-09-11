@@ -4,7 +4,7 @@ const ANSWERS = {
     "phan mem bao gom": "Tất cả các thành phần trên",
     "phat bieu nao sau day khong phai la dac trung cho mot san pham phan mem?": "Các yếu tố về thay đổi yêu cầu của phần mềm không được xem xét một khi phát hành sản phẩm phần mềm",
     "lua chon nao sau day khong phai la mot trong nhung yeu to cua cong nghe phan mem?": "Chế tạo (manufactoring)",
-    "dau khong la dac trung cua phan mem": "Chất lượng phần mềm có xu hướng kém dần vì các lỗi được phát hiện bởi người dùng",
+    "dau khong la dac trung cua phan mem?": "Chất lượng phần mềm có xu hướng kém dần vì các lỗi được phát hiện bởi người dùng",
 
     "cong nghe phan mem duoc hieu la mot linh vuc ...... nham phat trien phan mem.": "Tất cả các đáp án",
     "theo pressman, cong nghe phan mem la bo mon tich hop … de phat trien phan mem may tinh.": "quy trình, các phương pháp, các công cụ",
