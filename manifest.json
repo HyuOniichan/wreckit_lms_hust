@@ -6,10 +6,17 @@
 	"action": {
 		"default_popup": "popup.html"
 	},
+	"host_permissions": [
+		"https://firestore.googleapis.com/*"
+	],
 	"content_scripts": [
 		{
 			"matches": ["https://lms.hust.edu.vn/*"],
-			"js": ["answers.js", "content.js"]
+			"js": [
+				"firebase.js",
+				"utils.js",
+				"content.js"
+			]
 		}
 	]
 }

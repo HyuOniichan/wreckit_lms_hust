@@ -1,21 +1,8 @@
 console.log("Extension loaded");
 
 
-function normalize(str) {
-	return str
-		.toLowerCase()
-		.normalize("NFD")
-		.replace(/[\u0300-\u036f]/g, "")
-		.replace(/đ/g, "d")
-		.replace(/Đ/g, "D")
-		.replace(/[\r\n]+/g, " ")
-		.replace(/\s+/g, " ")
-		.trim();
-}
 
-
-
-function getQuestion() {
+function queryQuestion() {
 	const question = document.querySelector(".que.multichoice.deferredfeedback")
 		.childNodes[1].childNodes[0].childNodes[2].innerText;
 
@@ -24,19 +11,147 @@ function getQuestion() {
 
 
 
-function findAnswer(question) {
-	const key = normalize(question);
-
-	for (const [q, answer] of Object.entries(ANSWERS)) {
-		if (normalize(q) === key) return answer;
-	}
-
-	return "";
+function queryCurrentCourse() {
+	const currentCourse = document.querySelector(".breadcrumb").children[0].innerText;
+	return currentCourse;
 }
 
 
 
-function highlightAnswer(answerText) {
+function queryCurrentTab() {
+	const currentTab = document.querySelector(".page-context-header").innerText;
+	return currentTab;
+}
+
+
+
+function queryQuizReviewTable() {
+	const table = document.querySelector(".generaltable").children[1];
+
+	if (!table) {
+		console.log("Review Quiz table not found");
+		return;
+	}
+
+	const keyValuePairs = [...table.children].map(element => {
+		const k = element.children[0].innerText;
+		const v = element.children[1].innerText;
+		return [k, v];
+	});
+
+	const tableObject = Object.fromEntries(keyValuePairs);
+	return tableObject;
+}
+
+
+
+function queryQuizReviewQuestions() {
+	const questions = document.querySelectorAll(".que.multichoice.deferredfeedback");
+
+	if (!questions) {
+		console.log("Review Quiz questions not found");
+		return;
+	}
+
+	const quizQuestions = [...questions].map((question, questionIndex) => {
+		const questionText = question.children[1].children[0].children[2].innerText;
+		const correctAnswerText = question.children[1].children[1].children[1].innerText.slice(23);
+
+		const correctAnswers = [];
+		const answerOptions = question.children[1].children[0].children[3].children[1].children;
+	
+		const answerMap = Object.fromEntries([...answerOptions].map(ans => {
+				if (ans.innerText.slice(4) == correctAnswerText) {
+					correctAnswers.push(ans.innerText.slice(0, 1).toUpperCase());
+				}
+				return [ans.innerText.slice(0, 1).toUpperCase(), ans.innerText.slice(4)];
+			}
+		));
+		
+		const questionObject = {
+			id: `q${String(questionIndex+1).padStart(3, '0')}`,
+			text: questionText,
+			normalizedText: normalize(questionText),
+			answers: answerMap,
+			correctAnswers: correctAnswers
+		};
+
+		return questionObject;
+	})
+
+	return JSON.stringify(quizQuestions);
+}
+
+
+
+// --- Debug
+
+// console.log(normalizeId(queryCurrentCourse()))
+// console.log(normalizeId(queryCurrentTab()))
+// console.log(queryQuizReviewTable())
+// console.log(queryQuizReviewQuestions())
+
+
+// async function testFirebase() {
+//     const questions = await getQuizQuestions(
+//         "bl-it3180-172879",
+//         "quiz-0101"
+//     );
+
+//     console.log("FIREBASE TEST:");
+//     console.log(questions);
+// }
+
+// testFirebase();
+
+
+
+// --- Logic
+
+async function handleShowAnswer() {
+	try {
+		const question = queryQuestion();
+		const courseName = queryCurrentCourse();
+		const quizName = queryCurrentTab();
+
+		const courseId = normalizeId(courseName);
+		const quizId = normalizeId(quizName);
+
+		console.log("Course:", courseName);
+        console.log("Course ID:", courseId);
+        console.log("Quiz:", quizName);
+        console.log("Quiz ID:", quizId);
+
+		const questions = await getQuizQuestions(courseId, quizId);
+		console.log("Questions loaded: ", questions.length);
+
+		const questionData = findQuestion(questions, question);
+
+		if (!questionData) {
+			console.log("Question not found: ", question);
+			console.log("Normalized: ", normalize(question));
+			console.log("Questions: ", questions);
+			return;
+		}
+		console.log("Question found: ", questionData);
+
+		const correctAnswers = questionData.correctAnswers;
+		console.log("Correct answers: ", correctAnswers);
+
+		for (const answerKey of correctAnswers) {
+			const answerText = questionData.answers[answerKey];
+			if (answerText) {
+				handleHighlightAnswer(answerText);
+			}
+		}
+	} catch (error) {
+		console.error("Failed to show answer:", error);
+	}
+}
+
+
+
+function handleHighlightAnswer(answerText) {
     const questionElement = document.querySelector(".que.multichoice.deferredfeedback");
 
     if (!questionElement) {
@@ -65,23 +180,6 @@ function highlightAnswer(answerText) {
 
     console.log("Không tìm thấy đáp án:", answerText);
     return false;
-}
-
-
-
-
-
-
-function handleShowAnswer() {
-    const question = getQuestion();
-    const answer = findAnswer(question);
-
-    if (!answer) {
-        console.log("Answer not found");
-        return;
-    }
-
-    highlightAnswer(answer);
 }
 
 
