@@ -108,8 +108,25 @@ function queryQuizReviewQuestions() {
 
 // --- Logic
 
+async function checkLicense() {
+    const result = await chrome.storage.local.get(["licenseKey", "licenseInfo"]);
+
+    if (!result.licenseKey || !result.licenseInfo) return false;
+    if (!result.licenseInfo.valid) return false;
+    return true;
+}
+
+
+
 async function handleShowAnswer() {
 	try {
+		const licensed = await checkLicense();
+
+		if (!licensed) {
+            console.log("License invalid. Cannot show answer.");
+            return;
+        }
+
 		const question = queryQuestion();
 		const courseName = queryCurrentCourse();
 		const quizName = queryCurrentTab();
@@ -117,26 +134,16 @@ async function handleShowAnswer() {
 		const courseId = normalizeId(courseName);
 		const quizId = normalizeId(quizName);
 
-		console.log("Course:", courseName);
-        console.log("Course ID:", courseId);
-        console.log("Quiz:", quizName);
-        console.log("Quiz ID:", quizId);
-
 		const questions = await getQuizQuestions(courseId, quizId);
-		console.log("Questions loaded: ", questions.length);
-
 		const questionData = findQuestion(questions, question);
 
 		if (!questionData) {
 			console.log("Question not found: ", question);
-			console.log("Normalized: ", normalize(question));
 			console.log("Questions: ", questions);
 			return;
 		}
-		console.log("Question found: ", questionData);
 
 		const correctAnswers = questionData.correctAnswers;
-		console.log("Correct answers: ", correctAnswers);
 
 		for (const answerKey of correctAnswers) {
 			const answerText = questionData.answers[answerKey];
@@ -166,14 +173,11 @@ function handleHighlightAnswer(answerText) {
 		if (!answerElement) continue;
 
         const text = answerElement.innerText;
-        console.log("Checking option:", normalize(text));
-        console.log("Correct answer:", normalize(answerText));
 
         if (normalize(text).slice(3) == normalize(answerText)) {
             answerElement.style.backgroundColor = "#fdff32";
             answerElement.style.padding = "1px 5px";
 
-            console.log("Đã highlight:", text);
             return true;
         }
     }
@@ -196,7 +200,7 @@ chrome.runtime.onMessage.addListener((message) => {
 
 // --- Hotkeys
 
-document.addEventListener("keydown", (event) => {
+document.addEventListener("keydown", async (event) => {
     if (event.key.toLowerCase() == "s") {
 		// Skip if holding Ctrl / Alt / Meta
 		if (event.ctrlKey || event.altKey || event.metaKey) return;

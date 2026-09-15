@@ -1,12 +1,53 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Huy diet LMS</title>
+
+    <style>
+        body {
+            width: 300px;
+            padding: 16px;
+            font-family: Arial, sans-serif;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+    </style>
 </head>
 
 <body>
-    <p>Finding answer...</p>
+    <h3>Wreck-It LMS HUST</h3>
 
+    <input
+        id="licenseInput"
+        type="text"
+        placeholder="License Key..."
+    >
+
+    <button id="activateButton">Activate</button>
+    <button id="deactivateButton">Deactivate</button>
+
+    <div id="status">Checking...</div>
+
+    <script src="firebase.js"></script>
     <script type="module" src="popup.js"></script>
 </body>
+
 </html>

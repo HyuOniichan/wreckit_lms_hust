@@ -2,21 +2,16 @@
 	"manifest_version": 3,
 	"name": "Wreck-It LMS Hust",
 	"version": "2026.1.0",
-    "description": "Tool tim dap an cho LMS quiz cua Hust",
+	"description": "Tool tim dap an cho LMS quiz cua Hust",
 	"action": {
 		"default_popup": "popup.html"
 	},
-	"host_permissions": [
-		"https://firestore.googleapis.com/*"
-	],
+	"permissions": ["storage"],
+	"host_permissions": ["https://firestore.googleapis.com/*"],
 	"content_scripts": [
 		{
 			"matches": ["https://lms.hust.edu.vn/*"],
-			"js": [
-				"firebase.js",
-				"utils.js",
-				"content.js"
-			]
+			"js": ["firebase.js", "utils.js", "content.js"]
 		}
 	]
 }

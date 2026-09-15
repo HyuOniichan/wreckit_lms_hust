@@ -10,6 +10,9 @@ function parseFirestoreValue(value) {
     if ("booleanValue" in value) return value.booleanValue;
     if ("nullValue" in value) return null;
 
+    if ("timestampValue" in value) 
+        return new Date(value.timestampValue);
+
     if ("arrayValue" in value) 
         return (value.arrayValue.values || []).map(parseFirestoreValue);
 
@@ -38,6 +41,62 @@ function parseFirestoreDocument(document) {
             parseFirestoreValue(value)
         ])
     );
+}
+
+
+
+async function validateLicense(licenseKey) {
+    const normalizedKey = licenseKey.trim().toUpperCase();
+
+    if (!normalizedKey) {
+        return {
+            valid: false,
+            reason: "empty"
+        }
+    }
+
+    const url = `${FIRESTORE_BASE_URL}/licenses/${encodeURIComponent(normalizedKey)}`;
+    const response = await fetch(url);
+
+    if (response.status === 404) {
+        return {
+            valid: false,
+            reason: "not_found"
+        };
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            `License validation error: ${response.status} ${response.statusText}`
+        );
+    }
+
+    const document = await response.json();
+    const data = parseFirestoreDocument(document);
+
+    if (!data.isActive) {
+        return {
+            valid: false,
+            reason: "inactive"
+        };
+    }
+
+    if (data.expiresAt) {
+        const expiry = data.expiresAt;
+
+        if (Date.now() > expiry.getTime()) {
+            return {
+                valid: false,
+                reason: "expired"
+            };
+        }
+    }
+
+    return {
+        valid: true,
+        userId: data.userId,
+        expiresAt: data.expiresAt.toLocaleDateString("vi-VN") || null
+    };
 }
 
 
