@@ -20,7 +20,8 @@
 			"js": [
 				"src/content/firebase.js",
 				"src/content/utils.js",
-				"src/content/content.js"
+				"src/content/content.js",
+				"src/chatbox/chatbox.js"
 			]
 		}
 	]
