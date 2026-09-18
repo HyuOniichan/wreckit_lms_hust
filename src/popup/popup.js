@@ -1,8 +1,12 @@
 chrome.tabs.query(
     { active: true, currentWindow: true },
     ([tab]) => {
+        if (!tab?.id) return;
+
         chrome.tabs.sendMessage(tab.id, {
             action: "showAnswer"
+        }).catch(() => {
+            // The content script is unavailable outside LMS pages.
         });
     }
 );
@@ -27,6 +31,17 @@ async function updateStatus() {
     }
 }
 
+async function updateGroqStatus() {
+    const result = await chrome.storage.local.get("groqApiKey");
+    const input = document.getElementById("groqApiKeyInput");
+    const status = document.getElementById("groqStatus");
+
+    if (result.groqApiKey) {
+        input.value = result.groqApiKey;
+        status.innerText = "Đã lưu Groq API key.";
+    }
+}
+
 
 
 document
@@ -46,7 +61,7 @@ document
         status.innerText = "Đang kiểm tra...";
 
         try {
-            const result = await validateLicense(licenseKey);
+            const result = await globalThis.validateLicense(licenseKey);
 
             if (!result.valid) {
                 status.innerText = `License không hợp lệ: ${result.reason}`;
@@ -73,6 +88,23 @@ document
         document.getElementById("status").innerText = "Đã deactivate.";
     });
 
+document
+    .getElementById("saveGroqApiKeyButton")
+    .addEventListener("click", async () => {
+        const input = document.getElementById("groqApiKeyInput");
+        const status = document.getElementById("groqStatus");
+        const groqApiKey = input.value.trim();
+
+        if (!groqApiKey) {
+            status.innerText = "Hãy nhập Groq API key.";
+            return;
+        }
+
+        await chrome.storage.local.set({ groqApiKey });
+        status.innerText = "Đã lưu Groq API key.";
+    });
+
 
 
 updateStatus();
+updateGroqStatus();

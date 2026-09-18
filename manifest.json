@@ -10,7 +10,8 @@
 		"storage"
 	],
 	"host_permissions": [
-		"https://firestore.googleapis.com/*"
+		"https://firestore.googleapis.com/*",
+		"https://api.groq.com/*"
 	],
 	"content_scripts": [
 		{

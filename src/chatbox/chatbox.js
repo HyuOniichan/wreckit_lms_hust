@@ -1,5 +1,7 @@
 (() => {
     const buttonId = "lms-chatbox-button";
+    const groqEndpoint = "https://api.groq.com/openai/v1/chat/completions";
+    const groqModel = "groq/compound";
 
     if (document.getElementById(buttonId)) return;
 
@@ -52,6 +54,8 @@
         width: "min(300px, calc(100vw - 32px))",
         height: "360px",
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
         boxSizing: "border-box",
         border: "1px solid #dbe3ef",
         borderRadius: "14px",
@@ -130,21 +134,180 @@
     panelHeader.appendChild(closeButton);
     chatboxPanel.appendChild(panelHeader);
 
+    const messages = document.createElement("div");
+    messages.setAttribute("aria-live", "polite");
+    Object.assign(messages.style, {
+        flex: "1",
+        minHeight: "0",
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        padding: "14px",
+        boxSizing: "border-box",
+        backgroundColor: "#f8fafc"
+    });
+
     const emptyState = document.createElement("div");
     emptyState.textContent = "Sẵn sàng hỗ trợ bạn trong quá trình làm bài.";
     Object.assign(emptyState.style, {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "calc(100% - 66px)",
-        padding: "24px",
-        boxSizing: "border-box",
+        margin: "auto",
         color: "#94a3b8",
         fontSize: "13px",
         lineHeight: "1.5",
         textAlign: "center"
     });
-    chatboxPanel.appendChild(emptyState);
+    messages.appendChild(emptyState);
+    chatboxPanel.appendChild(messages);
+
+    const messageForm = document.createElement("form");
+    Object.assign(messageForm.style, {
+        display: "flex",
+        gap: "8px",
+        padding: "10px",
+        borderTop: "1px solid #e5e7eb",
+        backgroundColor: "#ffffff"
+    });
+
+    const messageInput = document.createElement("textarea");
+    messageInput.rows = 1;
+    messageInput.placeholder = "Nhập tin nhắn...";
+    messageInput.setAttribute("aria-label", "Tin nhắn");
+    Object.assign(messageInput.style, {
+        flex: "1",
+        minWidth: "0",
+        minHeight: "36px",
+        maxHeight: "80px",
+        resize: "none",
+        padding: "9px 10px",
+        boxSizing: "border-box",
+        border: "1px solid #cbd5e1",
+        borderRadius: "9px",
+        outline: "none",
+        color: "#1f2937",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "13px",
+        lineHeight: "1.35"
+    });
+
+    const sendButton = document.createElement("button");
+    sendButton.type = "submit";
+    sendButton.textContent = "Gửi";
+    sendButton.setAttribute("aria-label", "Gửi tin nhắn");
+    Object.assign(sendButton.style, {
+        alignSelf: "stretch",
+        padding: "0 12px",
+        border: "0",
+        borderRadius: "9px",
+        backgroundColor: "#1f2937",
+        color: "#ffffff",
+        fontSize: "13px",
+        fontWeight: "700",
+        cursor: "pointer"
+    });
+
+    const conversation = [];
+
+    const addMessage = (text, sender = "user") => {
+        if (emptyState.isConnected) emptyState.remove();
+
+        const message = document.createElement("div");
+        message.textContent = text;
+        Object.assign(message.style, {
+            alignSelf: sender === "user" ? "flex-end" : "flex-start",
+            maxWidth: "85%",
+            padding: "8px 10px",
+            borderRadius: sender === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px",
+            backgroundColor: sender === "user" ? "#1f2937" : "#e2e8f0",
+            color: sender === "user" ? "#ffffff" : "#1f2937",
+            fontSize: "13px",
+            lineHeight: "1.4",
+            overflowWrap: "anywhere"
+        });
+
+        messages.appendChild(message);
+        messages.scrollTop = messages.scrollHeight;
+        return message;
+    };
+
+    const requestGroqResponse = async () => {
+        const { groqApiKey } = await chrome.storage.local.get("groqApiKey");
+
+        if (!groqApiKey) {
+            throw new Error("Chưa cấu hình Groq API key trong chrome.storage.local.");
+        }
+
+        const response = await fetch(groqEndpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${groqApiKey}`
+            },
+            body: JSON.stringify({
+                model: groqModel,
+                messages: [
+                    {
+                        role: "system",
+                        content: "Bạn là trợ lý học tập ngắn gọn, hữu ích và trả lời bằng tiếng Việt nếu người dùng hỏi bằng tiếng Việt."
+                    },
+                    ...conversation
+                ],
+                temperature: 0.4,
+                max_tokens: 700
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error?.message || `Groq API error: ${response.status}`);
+        }
+
+        return data.choices?.[0]?.message?.content?.trim() || "Mình chưa có câu trả lời cho câu hỏi này.";
+    };
+
+    messageForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const text = messageInput.value.trim();
+
+        if (!text) return;
+
+        addMessage(text);
+        conversation.push({ role: "user", content: text });
+        messageInput.value = "";
+        messageInput.disabled = true;
+        sendButton.disabled = true;
+        sendButton.textContent = "...";
+
+        const loadingMessage = addMessage("Đang trả lời...", "assistant");
+
+        try {
+            const answer = await requestGroqResponse();
+            loadingMessage.textContent = answer;
+            conversation.push({ role: "assistant", content: answer });
+        } catch (error) {
+            loadingMessage.textContent = `Không thể nhận phản hồi: ${error.message}`;
+            loadingMessage.style.color = "#b91c1c";
+            console.error("Groq request failed:", error);
+        } finally {
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            sendButton.textContent = "Gửi";
+        }
+
+        messageInput.focus();
+    });
+
+    messageInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            messageForm.requestSubmit();
+        }
+    });
+
+    messageForm.appendChild(messageInput);
+    messageForm.appendChild(sendButton);
+    chatboxPanel.appendChild(messageForm);
 
     const connector = document.createElement("div");
     connector.setAttribute("aria-hidden", "true");

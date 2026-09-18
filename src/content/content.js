@@ -3,8 +3,8 @@ console.log("Extension loaded");
 
 
 function queryQuestion() {
-	const question = document.querySelector(".que.multichoice.deferredfeedback")
-		.childNodes[1].childNodes[0].childNodes[2].innerText;
+	const questionElement = document.querySelector(".que.multichoice.deferredfeedback");
+	const question = questionElement?.childNodes[1]?.childNodes[0]?.childNodes[2]?.innerText;
 
 	return question;
 }
@@ -12,19 +12,19 @@ function queryQuestion() {
 
 
 function queryCurrentCourse() {
-	const currentCourse = document.querySelector(".breadcrumb").children[0].innerText;
+	const currentCourse = document.querySelector(".breadcrumb")?.children[0]?.innerText;
 	return currentCourse;
 }
 
 
 
 function queryCurrentTab() {
-	const currentTab = document.querySelector(".page-context-header").innerText;
+	const currentTab = document.querySelector(".page-context-header")?.innerText;
 	return currentTab;
 }
 
 
-
+	
 function queryQuizReviewTable() {
 	const table = document.querySelector(".generaltable").children[1];
 
@@ -59,17 +59,17 @@ function queryQuizReviewQuestions() {
 
 		const correctAnswers = [];
 		const answerOptions = question.children[1].children[0].children[3].children[1].children;
-	
+
 		const answerMap = Object.fromEntries([...answerOptions].map(ans => {
-				if (ans.innerText.slice(4) == correctAnswerText) {
-					correctAnswers.push(ans.innerText.slice(0, 1).toUpperCase());
-				}
-				return [ans.innerText.slice(0, 1).toUpperCase(), ans.innerText.slice(4)];
+			if (ans.innerText.slice(4) == correctAnswerText) {
+				correctAnswers.push(ans.innerText.slice(0, 1).toUpperCase());
 			}
+			return [ans.innerText.slice(0, 1).toUpperCase(), ans.innerText.slice(4)];
+		}
 		));
-		
+
 		const questionObject = {
-			id: `q${String(questionIndex+1).padStart(3, '0')}`,
+			id: `q${String(questionIndex + 1).padStart(3, '0')}`,
 			text: questionText,
 			normalizedText: normalize(questionText),
 			answers: answerMap,
@@ -93,13 +93,13 @@ function queryQuizReviewQuestions() {
 
 
 // async function testFirebase() {
-//     const questions = await getQuizQuestions(
-//         "bl-it3180-172879",
-//         "quiz-0101"
-//     );
+// 	const questions = await getQuizQuestions(
+// 		"bl-it3180-172879",
+// 		"quiz-0101"
+// 	);
 
-//     console.log("FIREBASE TEST:");
-//     console.log(questions);
+// 	console.log("FIREBASE TEST:");
+// 	console.log(questions);
 // }
 
 // testFirebase();
@@ -109,11 +109,11 @@ function queryQuizReviewQuestions() {
 // --- Logic
 
 async function checkLicense() {
-    const result = await chrome.storage.local.get(["licenseKey", "licenseInfo"]);
+	const result = await chrome.storage.local.get(["licenseKey", "licenseInfo"]);
 
-    if (!result.licenseKey || !result.licenseInfo) return false;
-    if (!result.licenseInfo.valid) return false;
-    return true;
+	if (!result.licenseKey || !result.licenseInfo) return false;
+	if (!result.licenseInfo.valid) return false;
+	return true;
 }
 
 
@@ -123,13 +123,18 @@ async function handleShowAnswer() {
 		const licensed = await checkLicense();
 
 		if (!licensed) {
-            console.log("License invalid. Cannot show answer.");
-            return;
-        }
+			console.log("License invalid. Cannot show answer.");
+			return;
+		}
 
 		const question = queryQuestion();
 		const courseName = queryCurrentCourse();
 		const quizName = queryCurrentTab();
+
+		if (!question || !courseName || !quizName) {
+			console.log("Quiz question not found on this page.");
+			return;
+		}
 
 		const courseId = normalizeId(courseName);
 		const quizId = normalizeId(quizName);
@@ -159,31 +164,31 @@ async function handleShowAnswer() {
 
 
 function handleHighlightAnswer(answerText) {
-    const questionElement = document.querySelector(".que.multichoice.deferredfeedback");
+	const questionElement = document.querySelector(".que.multichoice.deferredfeedback");
 
-    if (!questionElement) {
-        console.log("Không tìm thấy question");
-        return false;
-    }
+	if (!questionElement) {
+		console.log("Không tìm thấy question");
+		return false;
+	}
 
-    const answerContainer = questionElement.childNodes[1].childNodes[0].childNodes[3].childNodes[1];
+	const answerContainer = questionElement.childNodes[1].childNodes[0].childNodes[3].childNodes[1];
 
-    for (const option of answerContainer.children) {
+	for (const option of answerContainer.children) {
 		const answerElement = option.children[1];
 		if (!answerElement) continue;
 
-        const text = answerElement.innerText;
+		const text = answerElement.innerText;
 
-        if (normalize(text).slice(3) == normalize(answerText)) {
-            answerElement.style.backgroundColor = "#fdff32";
-            answerElement.style.padding = "1px 5px";
+		if (normalize(text).slice(3) == normalize(answerText)) {
+			answerElement.style.backgroundColor = "#fdff32";
+			answerElement.style.padding = "1px 5px";
 
-            return true;
-        }
-    }
+			return true;
+		}
+	}
 
-    console.log("Không tìm thấy đáp án:", answerText);
-    return false;
+	console.log("Không tìm thấy đáp án:", answerText);
+	return false;
 }
 
 
@@ -191,9 +196,9 @@ function handleHighlightAnswer(answerText) {
 // --- Message from popup
 
 chrome.runtime.onMessage.addListener((message) => {
-    if (message.action === "showAnswer") {
-        handleShowAnswer();
-    }
+	if (message.action === "showAnswer") {
+		handleShowAnswer();
+	}
 });
 
 
@@ -201,13 +206,13 @@ chrome.runtime.onMessage.addListener((message) => {
 // --- Hotkeys
 
 document.addEventListener("keydown", async (event) => {
-    if (event.key.toLowerCase() == "s") {
+	if (event.key.toLowerCase() == "s") {
 		// Skip if holding Ctrl / Alt / Meta
 		if (event.ctrlKey || event.altKey || event.metaKey) return;
-	
+
 		// Skip while texting
 		const target = event.target;
-	
+
 		if (
 			target instanceof HTMLInputElement ||
 			target instanceof HTMLTextAreaElement ||
@@ -216,9 +221,9 @@ document.addEventListener("keydown", async (event) => {
 		) {
 			return;
 		}
-	
+
 		console.log("HOTKEY S -> SHOW ANSWER");
 		handleShowAnswer();
-    }
+	}
 });
 

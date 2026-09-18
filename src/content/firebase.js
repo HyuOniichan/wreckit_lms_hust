@@ -99,6 +99,8 @@ async function validateLicense(licenseKey) {
     };
 }
 
+globalThis.validateLicense = validateLicense;
+
 
 
 async function getQuizQuestions(courseId, quizId) {
